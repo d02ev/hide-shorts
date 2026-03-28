@@ -1,30 +1,35 @@
-const hideShorts = () => {
+const HIDE_SHORTS_CSS = `
+  ytd-rich-shelf-renderer[dismissible] {
+    display: none !important;
+  }
+  ytd-guide-entry-renderer:has([title="Shorts"]),
+  ytd-guide-entry-renderer:has([title="Shorts"]) + li {
+    display: none !important;
+  }
+  ytd-guide-entry-renderer:nth-child(2) {
+    display: none !important;
+  }
+  ytd-reel-shelf-renderer {
+    display: none !important;
+  }
+  ytd-search-filter-group-renderer:has(ytd-search-filter-renderer:has([title="Shorts"])) {
+    display: none !important;
+  }
+`;
+
+let styleInjected = false;
+
+const injectStyle = () => {
+  if (styleInjected) return;
   const style = document.createElement('style');
-  style.textContent = `
-    ytd-rich-shelf-renderer[dismissible] {
-      display: none !important;
-    }
-    ytd-guide-entry-renderer:has([title="Shorts"]),
-    ytd-guide-entry-renderer:has([title="Shorts"]) + li {
-      display: none !important;
-    }
-    ytd-guide-entry-renderer:nth-child(2) {
-      display: none !important;
-    }
-    ytd-reel-shelf-renderer {
-      display: none !important;
-    }
-    ytd-search-filter-group-renderer:has(ytd-search-filter-renderer:has([title="Shorts"])) {
-      display: none !important;
-    }
-  `;
+  style.id = 'hide-shorts-styles';
+  style.textContent = HIDE_SHORTS_CSS;
   document.head.appendChild(style);
+  styleInjected = true;
+};
 
-  const observer = new MutationObserver(() => {
-    document.head.appendChild(style);
-  });
-
-  observer.observe(document.head, { childList: true, subtree: true });
+const hideShorts = () => {
+  injectStyle();
 };
 
 if (document.readyState === 'loading') {
@@ -33,10 +38,8 @@ if (document.readyState === 'loading') {
   hideShorts();
 }
 
-let lastUrl = location.href;
-new MutationObserver(() => {
-  if (location.href !== lastUrl) {
-    lastUrl = location.href;
-    hideShorts();
-  }
-}).observe(document.body, { childList: true, subtree: true });
+window.addEventListener('yt-navigate-start', () => {
+  styleInjected = false;
+});
+
+window.addEventListener('yt-navigate-finish', hideShorts);
