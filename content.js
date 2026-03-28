@@ -1,5 +1,5 @@
 const HIDE_SHORTS_CSS = `
-  ytd-rich-shelf-renderer[dismissible] {
+  #dismissible.ytd-rich-shelf-renderer {
     display: none !important;
   }
   ytd-guide-entry-renderer:has([title="Shorts"]),
@@ -17,20 +17,38 @@ const HIDE_SHORTS_CSS = `
   }
 `;
 
-let styleInjected = false;
+let isEnabled = true;
 
-const injectStyle = () => {
-  if (styleInjected) return;
+const hideShorts = () => {
+  if (!isEnabled) return;
+
   const style = document.createElement('style');
   style.id = 'hide-shorts-styles';
   style.textContent = HIDE_SHORTS_CSS;
   document.head.appendChild(style);
-  styleInjected = true;
+
+  const shelves = document.querySelectorAll('#dismissible.ytd-rich-shelf-renderer');
+  console.log(`[Hide Shorts] Active - Hiding ${shelves.length} Shorts sections`);
 };
 
-const hideShorts = () => {
-  injectStyle();
+const removeStyles = () => {
+  const style = document.getElementById('hide-shorts-styles');
+  if (style) {
+    style.remove();
+    console.log('[Hide Shorts] Disabled - Shorts are now visible');
+  }
 };
+
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.action === 'toggle') {
+    isEnabled = message.enabled;
+    if (isEnabled) {
+      hideShorts();
+    } else {
+      removeStyles();
+    }
+  }
+});
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', hideShorts);
@@ -39,7 +57,8 @@ if (document.readyState === 'loading') {
 }
 
 window.addEventListener('yt-navigate-start', () => {
-  styleInjected = false;
+  const style = document.getElementById('hide-shorts-styles');
+  if (style) style.remove();
 });
 
 window.addEventListener('yt-navigate-finish', hideShorts);
